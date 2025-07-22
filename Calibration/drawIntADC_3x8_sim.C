@@ -4,14 +4,12 @@
 #include <utility>
 #include <iostream>
 
-void drawIntADC_3x8(int RunNo = 60102, int N = 1000, int rowN = -1, int colN = -1, TString mode = "draw" ) {
+void drawIntADC_3x8_sim(int RunNo = 60102, int N = 1000, int rowN = -1, int colN = -1, TString mode = "draw" ) {
 
     int BinNum = 1000; int BinMax = 300000;
 
-
     // Mapping {(MID, ch)} → (left/right, col, row)
     std::map<std::pair<int,int>, std::tuple<int,int,int>> channelMap;
-
 
     auto fullMap = GetCaloChMap();
     
@@ -24,7 +22,6 @@ void drawIntADC_3x8(int RunNo = 60102, int N = 1000, int rowN = -1, int colN = -
 
         channelMap[{mid, ch}] = std::make_tuple(lr, col, row);
     }
-
 
     // Histogram
     TH1F* hist_L[3][8] = {};
@@ -49,19 +46,21 @@ void drawIntADC_3x8(int RunNo = 60102, int N = 1000, int rowN = -1, int colN = -
     int validCount = 0;
     int totalEntries = t->GetEntries();
 
+//std::map<std::tuple<int,int,int>, double> eventSumMap;
 std::map<std::pair<int,int>, double> eventSumMap;
     for (int evt = 0; evt < totalEntries; ++evt) {
         if (validCount >= N) break;
-
-        t->GetEntry(evt);  eventSumMap.clear();
-        bool eventValid = false;
+        eventSumMap.clear();
+	bool channelFilled = false;
+        t->GetEntry(evt);
+  
         int nCh = MID->size();
         for (size_t i = 0; i < nCh; ++i) {
             if (data_length->size() != 92) continue;
     	    int mid_val = MID->at(i);
             int ch_val = ch->at(i);
             auto key = std::make_pair(mid_val, ch_val);
-            if (mid_val != 41 && mid_val != 42)        continue;
+            if (mid_val != 41 && mid_val != 42) continue;
 	    if (channelMap.find(key) == channelMap.end()) continue;
 
             auto [lr, col, row] = channelMap[key];
@@ -70,32 +69,34 @@ std::map<std::pair<int,int>, double> eventSumMap;
             int len = (i + 1 < nCh ? waveform_idx->at(i + 1) : waveform_total->size());
             int sum = 0;
             for (int j = idx; j < len; ++j) {
-//  	      if(j%2==0)
+  	      if(j%2==0)
 	        sum += waveform_total->at(j);
             }
+
             auto key2 = std::make_pair(mid_val, ch_val);
+
     	    eventSumMap[key2] += sum;
 	}
-
-	for (auto &p : eventSumMap) {
+        for (auto &p : eventSumMap) {
             auto [mid, ch] = p.first;
             double val = p.second;
-            auto [lr, col, row] = channelMap[{mid, ch}];
-	    TH1F*& hist = (lr == 0) ? hist_L[row][col] : hist_R[row][col];
-        if (!hist) {
-            TString title = Form("(%d,%d)->(%d,%d,%d)", mid, ch, lr, row, col);
-            hist = new TH1F(Form("h_adc_%d_%d_%d", lr, row, col), title, BinNum, 0, BinMax);
+ 	    auto [lr, col, row] = channelMap[{mid, ch}];
+            TH1F*& hist = (lr == 0) ? hist_L[row][col] : hist_R[row][col];
+            if (!hist) {
+                TString title = Form("(%d,%d)->(%d,%d,%d)", mid, ch, lr, row, col);
+                hist = new TH1F(Form("h_adc_%d_%d_%d", lr, row, col), title, BinNum, 0, BinMax);
             }
-            hist->Fill(val);
-        }  
-        validCount++ ;
+            hist->Fill(val); channelFilled = true;
+        }
+      	if (channelFilled) {
+        validCount++;  cout << "validCount :"  << validCount  << endl;
+	}
     }
-
     // Canvas
     if (mode == "draw" && rowN == -1){  
-	 TCanvas* cL = new TCanvas("cL", "(MID,ch)->(lr,row,col)", 2000, 800);
-	 TCanvas* cR = new TCanvas("cR", "(MID,ch)->(lr,row,col)", 2000, 800);
-         cL->Divide(8, 3);    cR->Divide(8, 3);    
+	TCanvas* cL = new TCanvas("cL", "(MID,ch)->(lr,row,col)", 2000, 800);
+	TCanvas* cR = new TCanvas("cR", "(MID,ch)->(lr,row,col)", 2000, 800);
+        cL->Divide(8, 3);    cR->Divide(8, 3);    
         for (int r = 0; r < 3; ++r) {
             for (int c = 0; c < 8; ++c) {
                 int pad = r * 8 + c + 1;
@@ -117,7 +118,7 @@ std::map<std::pair<int,int>, double> eventSumMap;
         }
     }
     
-    if (mode == "draw" && rowN != -1 && colN == -1){	
+    if (mode == "draw" || mode == "sim" && rowN != -1 && colN == -1){	
 	TCanvas* cL = new TCanvas("cL", "(MID,ch)->(lr,row,col)", 1200, 600);
 	TCanvas* cR = new TCanvas("cR", "(MID,ch)->(lr,row,col)", 1200, 600);
     	cL->Divide(4, 2);    cR->Divide(4, 2);
@@ -137,7 +138,34 @@ std::map<std::pair<int,int>, double> eventSumMap;
  	       stats_R->SetTextSize(0.045);
    	       stats_R->Draw("same");
 	    }
-        }    
+        }
+        if (mode == "sim"){
+            TFile *f2 = TFile::Open("../sim/3x8_5_GeV_CERN_hist.root");
+            int ee = 1;
+            for (int ch=1; ch<33; ch++){
+                if (ch == 8 || ch == 16 || ch == 24 || ch == 32) continue;
+                int rr = ch -1;
+		if (rr/8 != 1) continue;
+       		TString histName_s = Form("Nhits_L_M%d", ch);
+                TH1F* hist_s = (TH1F*)f2->Get(histName_s);
+                cL->cd(ee);
+                hist_s->Draw("SAME hist");
+//                hist_s->Rebin(20);
+                hist_s->SetLineColor(1);
+                hist_s->SetLineWidth(2);
+/*
+                auto lg = new TLegend(0.6,0.55,0.9,0.85);
+                lg -> AddEntry(IntADC_L, "IntADC_Left", "p" );
+                lg -> AddEntry(IntADC_R, "IntADC_Right", "p" );
+                lg -> AddEntry(hist_s, "Simulation", "l");
+                lg->SetBorderSize(0);
+                lg->SetFillStyle(0);
+                lg -> Draw();
+*/
+                gPad->Update();
+                ee += 1;
+                }
+    }
     }
 
     if (mode == "draw" && rowN != -1 && colN != -1 ){ 

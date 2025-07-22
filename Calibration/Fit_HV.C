@@ -46,7 +46,7 @@ if (opt == -1)    {
             cL->cd(r * 8 + c + 1);
             gHV_L[3-r][c]->Fit(fitL, "R0Q");
             gHV_L[3-r][c]->SetMarkerStyle(20);
-            gHV_L[3-r][c]->SetTitle(Form("L (%d,%d);HV;intADC", r, c));
+            gHV_L[3-r][c]->SetTitle(Form("L (%d,%d);HV;intADC", 3-r, c));
             gHV_L[3-r][c]->Draw("AP");
             fitL->Draw("same");
 /*
@@ -58,7 +58,7 @@ if (opt == -1)    {
             cR->cd(r * 8 + c + 1);
             gHV_R[3-r][c]->Fit(fitR, "R0Q");
             gHV_R[3-r][c]->SetMarkerStyle(20);
-            gHV_R[3-r][c]->SetTitle(Form("R (%d,%d);HV;intADC", r, c));
+            gHV_R[3-r][c]->SetTitle(Form("R (%d,%d);HV;intADC", 3-r, c));
             gHV_R[3-r][c]->Draw("AP");
             fitR->Draw("same");
 /*
@@ -108,7 +108,7 @@ if (opt != -1) {
             arrow_R->SetLineWidth(2);
             arrow_R->SetFillColor(kBlue+2);
             arrow_R->Draw();
-	    TLatex* latexR = new TLatex(500, 20000+intADC_val[c], Form("HV=%.1f", HV_R));
+	    TLatex* latexR = new TLatex(500,20000+intADC_val[c], Form("HV=%.1f", HV_R));
             latexR->SetTextSize(0.06);
             latexR->Draw();
         }
