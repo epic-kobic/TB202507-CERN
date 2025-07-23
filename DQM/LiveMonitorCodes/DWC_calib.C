@@ -1,5 +1,3 @@
-// DWC_calib.C - ROOT macro for DWC timing calibration
-
 #include <TFile.h>
 #include <TH1F.h>
 #include <TString.h>
