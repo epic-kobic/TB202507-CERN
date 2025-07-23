@@ -6,7 +6,7 @@
 
 void drawIntADC_3x8_sim(int RunNo = 60102, int N = 1000, int rowN = -1, int colN = -1, TString mode = "draw" ) {
 
-    int BinNum = 1000; int BinMax = 300000;
+    int BinNum = 100; int BinMax = 100000;
 
     // Mapping {(MID, ch)} → (left/right, col, row)
     std::map<std::pair<int,int>, std::tuple<int,int,int>> channelMap;
@@ -89,7 +89,8 @@ std::map<std::pair<int,int>, double> eventSumMap;
             hist->Fill(val); channelFilled = true;
         }
       	if (channelFilled) {
-        validCount++;  cout << "validCount :"  << validCount  << endl;
+        validCount++;  
+	    if (validCount%1000==0)cout << "validCount :"  << validCount  << endl;
 	}
     }
     // Canvas
@@ -118,7 +119,7 @@ std::map<std::pair<int,int>, double> eventSumMap;
         }
     }
     
-    if (mode == "draw" || mode == "sim" && rowN != -1 && colN == -1){	
+    if (mode == "draw" && rowN != -1 && colN == -1){	
 	TCanvas* cL = new TCanvas("cL", "(MID,ch)->(lr,row,col)", 1200, 600);
 	TCanvas* cR = new TCanvas("cR", "(MID,ch)->(lr,row,col)", 1200, 600);
     	cL->Divide(4, 2);    cR->Divide(4, 2);
@@ -139,33 +140,77 @@ std::map<std::pair<int,int>, double> eventSumMap;
    	       stats_R->Draw("same");
 	    }
         }
-        if (mode == "sim"){
-            TFile *f2 = TFile::Open("../sim/3x8_5_GeV_CERN_hist.root");
-            int ee = 1;
-            for (int ch=1; ch<33; ch++){
-                if (ch == 8 || ch == 16 || ch == 24 || ch == 32) continue;
-                int rr = ch -1;
-		if (rr/8 != 1) continue;
-       		TString histName_s = Form("Nhits_L_M%d", ch);
-                TH1F* hist_s = (TH1F*)f2->Get(histName_s);
-                cL->cd(ee);
-                hist_s->Draw("SAME hist");
-//                hist_s->Rebin(20);
-                hist_s->SetLineColor(1);
-                hist_s->SetLineWidth(2);
-/*
-                auto lg = new TLegend(0.6,0.55,0.9,0.85);
-                lg -> AddEntry(IntADC_L, "IntADC_Left", "p" );
-                lg -> AddEntry(IntADC_R, "IntADC_Right", "p" );
-                lg -> AddEntry(hist_s, "Simulation", "l");
-                lg->SetBorderSize(0);
-                lg->SetFillStyle(0);
-                lg -> Draw();
-*/
-                gPad->Update();
-                ee += 1;
-                }
-    }
+        
+        TFile *f2 = TFile::Open("../sim/3x8_5_GeV_CERN_hist.root");
+        int ee = 1;
+        TH1F* hist_l11 = (TH1F*)f2->Get("Nhits_L_M11");
+	TH1F* hist_R11 = (TH1F*)f2->Get("Nhits_R_M11");
+        int aa=hist_L[rowN][2]->GetMean();  int bb=hist_l11->GetMean();  float con=aa/bb;
+	int aa2=hist_R[rowN][2]->GetMean();  int bb2=hist_R11->GetMean();  float con2=aa2/bb2;
+	for (int ch=9; ch<17; ch++){
+            int rr = ch - 9;
+       	    TString histName_s = Form("Nhits_L_M%d", ch);
+            TH1F* hist_s = (TH1F*)f2->Get(histName_s);
+            cL->cd(ee);
+            double oldMin = hist_s->GetXaxis()->GetXmin();
+            double oldMax = hist_s->GetXaxis()->GetXmax();
+            hist_s->GetXaxis()->SetLimits(oldMin * con, oldMax * con);
+            hist_s->GetXaxis()->SetRangeUser(0,100000);
+            hist_s->Draw("SAME hist");
+            hist_s->SetLineColor(2);
+            hist_s->SetLineWidth(2);
+            hist_s->SetLineStyle(2);
+
+ 	    float mean_sim = hist_s->GetMean();
+            float mean_data = hist_L[rowN][rr]->GetMean();
+ 	    float mean_err = fabs((mean_sim - mean_data) *100 / mean_sim);
+ 	    TLatex* latex = new TLatex();
+            latex->SetNDC();                
+ 	    latex->SetTextSize(0.035);       
+ 	    latex->SetTextColor(kRed+1);    
+ 	    latex->DrawLatex(0.63, 0.50, Form("Sim #mu = %.0f", mean_sim)); 
+
+ 	    latex->SetTextColor(kBlue+1);
+ 	    latex->DrawLatex(0.63, 0.45, Form("Data #mu = %.0f", mean_data));
+
+            latex->SetTextColor(kBlack);
+ 	    latex->DrawLatex(0.63, 0.40, Form("#mu Err = %.1f%%", mean_err));
+
+            gPad->Update();
+            
+       	    TString histName_s2 = Form("Nhits_R_M%d", ch);
+            TH1F* hist_s2 = (TH1F*)f2->Get(histName_s2);
+            cR->cd(ee);
+            double oldMin2 = hist_s2->GetXaxis()->GetXmin();
+            double oldMax2 = hist_s2->GetXaxis()->GetXmax();
+            hist_s2->GetXaxis()->SetLimits(oldMin2 * con2, oldMax2 * con2);
+            hist_s2->GetXaxis()->SetRangeUser(0,100000);
+            hist_s2->Draw("SAME hist");
+            hist_s2->SetLineColor(2);
+            hist_s2->SetLineWidth(2);
+            hist_s2->SetLineStyle(2);
+
+ 	    float mean_sim2 = hist_s2->GetMean();
+            float mean_data2 = hist_R[rowN][rr]->GetMean();
+ 	    float mean_err2 = fabs((mean_sim2 - mean_data2) *100 / mean_sim2);
+ 	    TLatex* latex2 = new TLatex();
+            latex2->SetNDC();                
+ 	    latex2->SetTextSize(0.035);       
+ 	    latex2->SetTextColor(kRed+1);    
+ 	    latex2->DrawLatex(0.63, 0.50, Form("Sim #mu = %.0f", mean_sim2)); 
+
+ 	    latex2->SetTextColor(kBlue+1);
+ 	    latex2->DrawLatex(0.63, 0.45, Form("Data #mu = %.0f", mean_data2));
+
+            latex2->SetTextColor(kBlack);
+ 	    latex2->DrawLatex(0.63, 0.40, Form("#mu Err = %.1f%%", mean_err2));
+
+            gPad->Update();
+
+            ee += 1; cout << "ee : "  << ee <<  endl;
+        }
+        cL->SaveAs(Form("./image/Run%d_Left_row%d.pdf", RunNo,rowN));
+        cR->SaveAs(Form("./image/Run%d_Right_row%d.pdf", RunNo,rowN));
     }
 
     if (mode == "draw" && rowN != -1 && colN != -1 ){ 
