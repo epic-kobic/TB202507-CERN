@@ -4,11 +4,11 @@ void Fit_HV(int opt = -1 ) {
     int hv[nset]  = {500, 550, 600, 650, 700, 750, 800, 850, 900};                   // HV of Run
     float intADC_val[8] = {7362.5, 32557.8, 48000, 41976, 27920, 16015, 8510, 0};    // Desired IntADC value
 
-    TGraph* gHV_L[4][8] = {};
-    TGraph* gHV_R[4][8] = {};
+    TGraph* gHV_L[3][8] = {};
+    TGraph* gHV_R[3][8] = {};
 
     // TGraph Initialize
-    for (int r = 0; r < 4; ++r) {
+    for (int r = 0; r < 3; ++r) {
         for (int c = 0; c < 8; ++c) {
             gHV_L[r][c] = new TGraph();
             gHV_R[r][c] = new TGraph();
@@ -17,8 +17,8 @@ void Fit_HV(int opt = -1 ) {
 
     // Read TFile, Get Mean
     for (int i = 0; i < nset-1; ++i) {
-        TFile* infile = new TFile(Form("./output/Run_%d_intADC.root", run[i]), "READ");
-        for (int r = 0; r < 4; ++r) {
+        TFile* infile = new TFile(Form("../output/Run_%d_intADC.root", run[i]), "READ");
+        for (int r = 0; r < 3; ++r) {
             for (int c = 0; c < 8; ++c) {
 
 //	    if ( r != opt) continue;
@@ -37,17 +37,17 @@ if (opt == -1)    {
     // 3x8 Canvas
     TCanvas* cL = new TCanvas("cL", "Left", 1600, 800);
     TCanvas* cR = new TCanvas("cR", "Right", 1600, 800);
-    cL->Divide(8, 4); cR->Divide(8, 4);
-    for (int r = 0; r < 4; ++r) {
+    cL->Divide(8,3); cR->Divide(8,3);
+    for (int r = 0; r < 3; ++r) {
         for (int c = 0; c < 8; ++c) {
-            TF1* fitL = new TF1("fitL", "exp([0]*x + [1])", 450, 850);
-            TF1* fitR = new TF1("fitR", "exp([0]*x + [1])", 450, 850);
+            TF1* fitL = new TF1("fitL", "[0] + [1]*x + [2]*x*x + [3]*x*x*x", 480, 850);
+            TF1* fitR = new TF1("fitR", "[0] + [1]*x + [2]*x*x + [3]*x*x*x", 480, 850);
 
             cL->cd(r * 8 + c + 1);
-            gHV_L[3-r][c]->Fit(fitL, "R0Q");
-            gHV_L[3-r][c]->SetMarkerStyle(20);
-            gHV_L[3-r][c]->SetTitle(Form("L (%d,%d);HV;intADC", 3-r, c));
-            gHV_L[3-r][c]->Draw("AP");
+            gHV_L[2-r][c]->Fit(fitL, "R0Q");
+            gHV_L[2-r][c]->SetMarkerStyle(20);
+            gHV_L[2-r][c]->SetTitle(Form("L (%d,%d);HV;intADC", 2-r, c));
+            gHV_L[2-r][c]->Draw("AP");
             fitL->Draw("same");
 /*
             double HV_L = fitL->GetX(intADC_val[c], 450, 850);
@@ -56,10 +56,10 @@ if (opt == -1)    {
             latexL->Draw();
 */
             cR->cd(r * 8 + c + 1);
-            gHV_R[3-r][c]->Fit(fitR, "R0Q");
-            gHV_R[3-r][c]->SetMarkerStyle(20);
-            gHV_R[3-r][c]->SetTitle(Form("R (%d,%d);HV;intADC", 3-r, c));
-            gHV_R[3-r][c]->Draw("AP");
+            gHV_R[2-r][c]->Fit(fitR, "R0Q");
+            gHV_R[2-r][c]->SetMarkerStyle(20);
+            gHV_R[2-r][c]->SetTitle(Form("R (%d,%d);HV;intADC", 2-r, c));
+            gHV_R[2-r][c]->Draw("AP");
             fitR->Draw("same");
 /*
             double HV_R = fitR->GetX(intADC_val[c], 450, 850);
@@ -75,8 +75,8 @@ if (opt != -1) {
     TCanvas* cR = new TCanvas("cR", "Right", 1200, 600);
     cL->Divide(4, 2); cR->Divide(4, 2);
         for (int c = 0; c < 7; ++c) {
-            TF1* fitL = new TF1("fitL", "exp([0]*x + [1])", 450, 850);
-            TF1* fitR = new TF1("fitR", "exp([0]*x + [1])", 450, 850);
+            TF1* fitL = new TF1("fitL", "[0] + [1]*x + [2]*x*x + [3]*x*x*x", 480, 850);
+            TF1* fitR = new TF1("fitR", "[0] + [1]*x + [2]*x*x + [3]*x*x*x", 480, 850);
 
             cL->cd(c + 1);
             gHV_L[opt][c]->Fit(fitL, "R0Q");
@@ -85,7 +85,7 @@ if (opt != -1) {
             gHV_L[opt][c]->Draw("AP");
             fitL->Draw("same");
 
-            double HV_L = fitL->GetX(intADC_val[c], 450, 850);
+            double HV_L = fitL->GetX(intADC_val[c], 480, 850);
 	    TArrow* arrow_L = new TArrow(HV_L, fitL->Eval(HV_L)-5000, HV_L, fitL->Eval(HV_L), 0.007, "|>");
 	    arrow_L->SetLineColor(kBlue);
 	    arrow_L->SetLineWidth(2);
@@ -102,7 +102,7 @@ if (opt != -1) {
             gHV_R[opt][c]->Draw("AP");
             fitR->Draw("same");
 
-            double HV_R = fitR->GetX(intADC_val[c], 450, 850);
+            double HV_R = fitR->GetX(intADC_val[c], 480, 850);
             TArrow* arrow_R = new TArrow(HV_R, fitR->Eval(HV_R)-5000, HV_R, fitR->Eval(HV_R), 0.007, "|>");
             arrow_R->SetLineColor(kBlue);
             arrow_R->SetLineWidth(2);
