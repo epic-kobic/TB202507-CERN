@@ -109,7 +109,6 @@ void processMID(int RunNo,
         in.read(buffer.data(), buffer.size());
         if (!in.good()) break;
 
-        // raw waveform 추출
         std::vector<std::vector<short>> rawWF(nCh, std::vector<short>(nADC));
         for (int ch = 0; ch < nCh; ++ch) {
             for (int samp = 0; samp < nADC; ++samp) {
@@ -120,7 +119,6 @@ void processMID(int RunNo,
             }
         }
 
-        // 채널별 leading-edge 시간 계산
         double times[4];
         for (int ch = 0; ch < nCh; ++ch) {
             float ped = getPed(rawWF[ch]);
@@ -133,7 +131,7 @@ void processMID(int RunNo,
                 h_time[ch]->Fill(times[ch] * 1e9); // ns
             }
         }
-        // delta UD (2-U,3-D), LR(0-R,1-L)
+        
         if (!std::isnan(times[2]) && !std::isnan(times[3])) {
             h_delta[0]->Fill((times[2] - times[3]) * 1e9);
         }
