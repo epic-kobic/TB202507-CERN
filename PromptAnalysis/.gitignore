@@ -2,6 +2,7 @@
 *
 
 # Allow specific C files for PR
+!intADC_QA.C
 !calibration_bic.C
 !caloMap.h
 !energy_calibration_bic.C
