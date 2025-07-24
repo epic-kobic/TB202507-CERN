@@ -1,0 +1,30 @@
+# Ignore all files by default
+*
+
+# Allow specific C files for PR
+!intADC_QA.C
+!calibration_bic.C
+!caloMap.h
+!energy_calibration_bic.C
+!README.md
+
+# Allow .gitignore itself
+!.gitignore
+
+# Allow .gitkeep files for empty directories
+!.gitkeep
+
+# Allow output directories (folders only, no files inside)
+!intADC_QA_output/
+!calibration_constant_output/
+!energy_calibration_output/
+
+# Ignore all other files and directories
+.DS_Store
+.vscode/
+.git/
+
+# Ignore specific file types (after allowing directories)
+*.root
+*.txt
+*.png
